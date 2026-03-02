@@ -3,56 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 多语言翻译工具</title>
+    <title>AI 多语言翻译工具 - 音视频版</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🌐 AI 多语言翻译工具</h1>
-            <p>支持文本 → 中文翻译 + 双语字幕导出</p>
+            <p>支持视频/音频/文本 → 中文翻译 + 双语字幕导出</p>
         </header>
 
         <div class="main-content">
+            <!-- 上传区域 -->
             <section class="upload-section">
                 <h2>1. 上传内容</h2>
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">📁</div>
                     <p>拖拽文件到此处，或点击选择文件</p>
-                    <p class="supported-formats">支持：TXT, SRT, JSON</p>
-                    <input type="file" id="fileInput" multiple accept=".txt,.srt,.json">
+                    <p class="supported-formats">
+                        支持：MP4, AVI, MOV, WebM, MP3, WAV, OGG, TXT, SRT
+                    </p>
+                    <input type="file" id="fileInput" multiple accept=".mp4,.avi,.mov,.webm,.mp3,.wav,.ogg,.txt,.srt">
                 </div>
                 <div class="file-list" id="fileList"></div>
             </section>
 
+            <!-- API 配置 -->
             <section class="config-section">
                 <h2>2. API 配置</h2>
-                <div class="form-group">
-                    <label for="apiKey">Qwen API Key:</label>
-                    <input type="password" id="apiKey" placeholder="请输入您的 API Key">
-                    <small>您的 API Key 仅存储在本地，不会上传到服务器</small>
+                
+                <div class="api-group">
+                    <h3>🎤 语音识别 API（音视频必需）</h3>
+                    <div class="form-group">
+                        <label for="sttProvider">语音识别服务商:</label>
+                        <select id="sttProvider">
+                            <option value="none">不使用（仅文本文件）</option>
+                            <option value="azure">Azure Speech to Text</option>
+                            <option value="google">Google Speech-to-Text</option>
+                            <option value="whisper">OpenAI Whisper API</option>
+                            <option value="aliyun">阿里云智能语音</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sttKey">语音识别 API Key:</label>
+                        <input type="password" id="sttKey" placeholder="语音识别 API Key">
+                    </div>
+                    <div class="form-group">
+                        <label for="sttRegion">区域/端点:</label>
+                        <input type="text" id="sttRegion" placeholder="如：eastasia, us-west 等">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="apiEndpoint">API 端点:</label>
-                    <input type="text" id="apiEndpoint" value="https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation">
-                </div>
-                <div class="form-group">
-                    <label for="sourceLang">源语言:</label>
-                    <select id="sourceLang">
-                        <option value="auto">自动检测</option>
-                        <option value="en">英语</option>
-                        <option value="ja">日语</option>
-                        <option value="ko">韩语</option>
-                        <option value="fr">法语</option>
-                        <option value="de">德语</option>
-                        <option value="es">西班牙语</option>
-                        <option value="ru">俄语</option>
-                        <option value="pt">葡萄牙语</option>
-                        <option value="it">意大利语</option>
-                    </select>
+
+                <div class="api-group">
+                    <h3>🤖 翻译 API</h3>
+                    <div class="form-group">
+                        <label for="apiKey">Qwen API Key:</label>
+                        <input type="password" id="apiKey" placeholder="请输入您的 API Key">
+                        <small>您的 API Key 仅存储在本地，不会上传到服务器</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="apiEndpoint">API 端点:</label>
+                        <input type="text" id="apiEndpoint" value="https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation">
+                    </div>
+                    <div class="form-group">
+                        <label for="sourceLang">源语言:</label>
+                        <select id="sourceLang">
+                            <option value="auto">自动检测</option>
+                            <option value="en">英语</option>
+                            <option value="ja">日语</option>
+                            <option value="ko">韩语</option>
+                            <option value="fr">法语</option>
+                            <option value="de">德语</option>
+                            <option value="es">西班牙语</option>
+                            <option value="ru">俄语</option>
+                            <option value="pt">葡萄牙语</option>
+                            <option value="it">意大利语</option>
+                            <option value="th">泰语</option>
+                            <option value="vi">越南语</option>
+                            <option value="zh">中文</option>
+                        </select>
+                    </div>
                 </div>
             </section>
 
+            <!-- 翻译控制 -->
             <section class="control-section">
                 <h2>3. 翻译控制</h2>
                 <div class="button-group">
@@ -63,36 +97,80 @@
                     <div class="progress-bar" id="progressBar"></div>
                 </div>
                 <p class="status-text" id="statusText">就绪</p>
+                
+                <!-- 音频播放器 -->
+                <div class="audio-player" id="audioPlayerContainer" style="display:none;">
+                    <audio id="audioPlayer" controls></audio>
+                </div>
             </section>
 
+            <!-- 翻译结果 -->
             <section class="result-section">
                 <h2>4. 翻译结果</h2>
                 <div class="result-tabs">
                     <button class="tab-btn active" data-tab="original">原文</button>
                     <button class="tab-btn" data-tab="translated">译文</button>
                     <button class="tab-btn" data-tab="bilingual">双语</button>
+                    <button class="tab-btn" data-tab="subtitles">字幕</button>
                 </div>
                 <div class="result-content">
                     <textarea id="originalText" placeholder="原文将显示在这里..." readonly></textarea>
                     <textarea id="translatedText" placeholder="译文将显示在这里..." readonly></textarea>
                     <textarea id="bilingualText" placeholder="双语内容将显示在这里..." readonly></textarea>
+                    <textarea id="subtitlesText" placeholder="字幕内容将显示在这里..." readonly></textarea>
                 </div>
             </section>
 
+            <!-- 导出选项 -->
             <section class="export-section">
                 <h2>5. 导出文件</h2>
                 <div class="export-buttons">
                     <button id="exportTxt" class="btn btn-success" disabled>📄 导出双语 TXT</button>
                     <button id="exportSrt" class="btn btn-success" disabled>🎬 导出 SRT 字幕</button>
+                    <button id="exportVtt" class="btn btn-success" disabled>📺 导出 VTT 字幕</button>
                     <button id="exportJson" class="btn btn-success" disabled>📊 导出 JSON</button>
+                    <button id="exportAss" class="btn btn-success" disabled>🎭 导出 ASS 字幕</button>
+                </div>
+            </section>
+
+            <!-- 帮助信息 -->
+            <section class="help-section">
+                <h2>💡 使用帮助</h2>
+                <div class="help-content">
+                    <h3>📹 视频/音频文件处理流程</h3>
+                    <ol>
+                        <li>上传视频或音频文件</li>
+                        <li>配置语音识别 API（推荐 Azure 或 Whisper）</li>
+                        <li>系统自动提取音频并识别语音</li>
+                        <li>使用 Qwen AI 翻译成中文</li>
+                        <li>导出带时间轴的字幕文件</li>
+                    </ol>
+                    
+                    <h3>🔑 语音识别 API 获取</h3>
+                    <ul>
+                        <li><strong>Azure:</strong> <a href="https://portal.azure.com/" target="_blank">Azure Portal</a> → Speech Services</li>
+                        <li><strong>Google:</strong> <a href="https://cloud.google.com/" target="_blank">Google Cloud</a> → Speech-to-Text</li>
+                        <li><strong>Whisper:</strong> <a href="https://platform.openai.com/" target="_blank">OpenAI Platform</a> → API Keys</li>
+                        <li><strong>阿里云:</strong> <a href="https://nls-portal.console.aliyun.com/" target="_blank">阿里云智能语音</a></li>
+                    </ul>
+                    
+                    <h3>⚠️ 注意事项</h3>
+                    <ul>
+                        <li>大文件处理时间较长，请耐心等待</li>
+                        <li>建议单个文件不超过 100MB</li>
+                        <li>视频文件会自动提取音频轨道</li>
+                        <li>API 调用会产生费用，请注意配额</li>
+                    </ul>
                 </div>
             </section>
         </div>
 
         <footer>
-            <p>Powered by Qwen AI</p>
+            <p>Powered by Qwen AI | 支持多种音视频格式</p>
         </footer>
     </div>
+
     <script src="app.js"></script>
 </body>
 </html>
+
